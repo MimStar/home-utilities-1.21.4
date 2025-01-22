@@ -1,5 +1,6 @@
 package com.homeutilities;
 
+import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class StateSaverAndLoader extends PersistentState {
 
     public HashMap<UUID,PlayerData> players = new HashMap<>();
+    public PublicData publicHomes = new PublicData();
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapperLookup){
@@ -25,6 +27,7 @@ public class StateSaverAndLoader extends PersistentState {
             playersNbt.put(uuid.toString(),playerNbt);
         }));
         nbt.put("players", playersNbt);
+        nbt.putString("publichomes",publicHomes.toString());
         return nbt;
     }
 
@@ -40,6 +43,8 @@ public class StateSaverAndLoader extends PersistentState {
             UUID uuid = UUID.fromString(key);
             state.players.put(uuid, playerData);
         });
+
+        state.publicHomes.setHomes(tag.getString("publichomes"));
 
         return state;
     }
@@ -63,6 +68,11 @@ public class StateSaverAndLoader extends PersistentState {
     public static PlayerData getPlayerState(LivingEntity player){
         StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
         return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new PlayerData());
+    }
+
+    public static PublicData getPublicState(LivingEntity player){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+        return serverState.publicHomes;
     }
 
     public static void saveState(MinecraftServer server) {

@@ -88,7 +88,27 @@ public class HomeUtilities implements ModInitializer {
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.executes(this::accepthomeExecute)));
 		});
-
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("psethome")
+					.then(CommandManager.argument("name", StringArgumentType.string())
+							.executes(this::psethomeExecute)));
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("pdelhome")
+					.then(CommandManager.argument("name", StringArgumentType.string())
+							.suggests(new PublicHomesSuggestionProvider())
+							.executes(this::pdelhomeExecute)));
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("phome")
+					.then(CommandManager.argument("name", StringArgumentType.string())
+							.suggests(new PublicHomesSuggestionProvider())
+							.executes(this::phomeExecute)));
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("phomes")
+					.executes(this::phomesExecute));
+		});
 		LOGGER.info("HOME Utilities has been loaded successfully!");
 	}
 
@@ -98,6 +118,17 @@ public class HomeUtilities implements ModInitializer {
         assert player != null;
         JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
 		context.getSource().sendFeedback(() -> Text.literal("Your home has been set!").formatted(Formatting.GREEN), false);
+		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		return 1;
+	}
+
+	private int psethomeExecute(CommandContext<ServerCommandSource> context){
+		String home_name = StringArgumentType.getString(context, "name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String home_finalname = player.getName().getString() + "-" + home_name;
+		JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
+		context.getSource().sendFeedback(() -> Text.literal("Your public home has been set!").formatted(Formatting.GREEN), false);
 		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		return 1;
 	}
@@ -112,6 +143,21 @@ public class HomeUtilities implements ModInitializer {
 		}
 		else{
 			context.getSource().sendFeedback(() -> Text.literal("Error : The home don't exist.").formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int pdelhomeExecute(CommandContext<ServerCommandSource> context){
+		String home_name = StringArgumentType.getString(context, "name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		if (JsonHandler.removePublicLocation(player, home_name)){
+			context.getSource().sendFeedback(() -> Text.literal("Your public home has been deleted!").formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal("Error : The public home don't exist or you're not the owner.").formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
@@ -139,6 +185,28 @@ public class HomeUtilities implements ModInitializer {
 		return 1;
 	}
 
+	private int phomeExecute(CommandContext<ServerCommandSource> context){
+		String home_name = StringArgumentType.getString(context, "name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		JsonObject location = JsonHandler.getPublicLocation(player,home_name);
+		if (location != null){
+			Vec3d pos = new Vec3d(location.get("x").getAsDouble(),location.get("y").getAsDouble(),location.get("z").getAsDouble());
+			Identifier identifier = Identifier.of(location.get("world").getAsString());
+			RegistryKey<World> worldRegistryKey = RegistryKey.of(RegistryKeys.WORLD,identifier);
+			ServerWorld world = context.getSource().getServer().getWorld(worldRegistryKey);
+			assert world != null;
+			TeleportTarget teleport_target = new TeleportTarget(world, pos, player.getVelocity(),player.getYaw(),player.getPitch(),TeleportTarget.ADD_PORTAL_CHUNK_TICKET);
+			player.teleportTo(teleport_target);
+			context.getSource().sendFeedback(() -> Text.literal("You have been teleported to the public home!").formatted(Formatting.GREEN), false);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal("Error : The public home don't exist.").formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
 	private int homesExecute(CommandContext<ServerCommandSource> context){
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
@@ -151,6 +219,23 @@ public class HomeUtilities implements ModInitializer {
 			context.getSource().sendFeedback(() -> Text.literal("Your homes (You can click on them to teleport):").formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
 				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))), false);
+			}
+		}
+		return 1;
+	}
+
+	private int phomesExecute(CommandContext<ServerCommandSource> context){
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		List<String> homesList = JsonHandler.listPublicLocations(player);
+		if (homesList == null){
+			context.getSource().sendFeedback(() -> Text.literal("Error : The server don't have any public home.").formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal("Public homes (You can click on them to teleport):").formatted(Formatting.DARK_GREEN), false);
+			for (String home : homesList){
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phome " + home))), false);
 			}
 		}
 		return 1;
