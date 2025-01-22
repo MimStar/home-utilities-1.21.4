@@ -31,20 +31,22 @@ public class StateSaverAndLoader extends PersistentState {
         return nbt;
     }
 
-    public static StateSaverAndLoader createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup){
+    public static StateSaverAndLoader createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
         StateSaverAndLoader state = new StateSaverAndLoader();
 
         NbtCompound playersNbt = tag.getCompound("players");
         playersNbt.getKeys().forEach(key -> {
             PlayerData playerData = new PlayerData();
-
             playerData.setHomes(playersNbt.getCompound(key).getString("homes"));
-
             UUID uuid = UUID.fromString(key);
             state.players.put(uuid, playerData);
         });
 
-        state.publicHomes.setHomes(tag.getString("publichomes"));
+        // Add null check for publicHomes
+        String publicHomesString = tag.getString("publichomes");
+        if (publicHomesString != null && !publicHomesString.isEmpty()) {
+            state.publicHomes.setHomes(publicHomesString);
+        }
 
         return state;
     }
