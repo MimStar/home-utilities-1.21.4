@@ -7,6 +7,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -39,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HomeUtilities implements ModInitializer {
 	private static final String MOD_ID = "home-utilities";
 	private static final ConcurrentHashMap<UUID, LinkedList<JsonObject>> shareHomeMap = new ConcurrentHashMap<>();
-
+	private static JsonObject translations = new JsonObject();
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -47,6 +48,15 @@ public class HomeUtilities implements ModInitializer {
 
 	public static String getMOD_ID(){
 		return MOD_ID;
+	}
+
+	public static Set<String> listTranslations(){
+		return translations.keySet();
+	}
+
+	public static String getTranslation(String language, String sentence){
+		if (!translations.has(language)) return "(Error : there is a problem in the tpa_translations.json, please delete the file and restart the server or correct your translation)";
+		return translations.get(language).getAsJsonObject().get(sentence).getAsString();
 	}
 
 	@Override
@@ -109,6 +119,15 @@ public class HomeUtilities implements ModInitializer {
 			dispatcher.register(CommandManager.literal("phomes")
 					.executes(this::phomesExecute));
 		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("homelanguage")
+					.then(CommandManager.argument("language", StringArgumentType.string())
+							.suggests(new LanguageSuggestionProvider())
+							.executes(this::homelanguageExecute)));
+		});
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			translations = JsonHandler.loadTranslations(server);
+		});
 		LOGGER.info("HOME Utilities has been loaded successfully!");
 	}
 
@@ -116,8 +135,9 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
         assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
         JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
-		context.getSource().sendFeedback(() -> Text.literal("Your home has been set!").formatted(Formatting.GREEN), false);
+		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"sethome_success")).formatted(Formatting.GREEN), false);
 		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		return 1;
 	}
@@ -126,9 +146,10 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		String home_finalname = player.getName().getString() + "-" + home_name;
 		JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
-		context.getSource().sendFeedback(() -> Text.literal("Your public home has been set!").formatted(Formatting.GREEN), false);
+		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"psethome_success")).formatted(Formatting.GREEN), false);
 		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		return 1;
 	}
@@ -137,12 +158,13 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		if (JsonHandler.removeLocation(player, home_name)){
-			context.getSource().sendFeedback(() -> Text.literal("Your home has been deleted!").formatted(Formatting.GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"delhome_success")).formatted(Formatting.GREEN), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Error : The home don't exist.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"delhome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
@@ -152,12 +174,13 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		if (JsonHandler.removePublicLocation(player, home_name)){
-			context.getSource().sendFeedback(() -> Text.literal("Your public home has been deleted!").formatted(Formatting.GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"pdelhome_success")).formatted(Formatting.GREEN), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Error : The public home don't exist or you're not the owner.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"pdelhome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
@@ -167,6 +190,7 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		JsonObject location = JsonHandler.getLocation(player,home_name);
 		if (location != null){
 			Vec3d pos = new Vec3d(location.get("x").getAsDouble(),location.get("y").getAsDouble(),location.get("z").getAsDouble());
@@ -176,10 +200,10 @@ public class HomeUtilities implements ModInitializer {
 			assert world != null;
 			TeleportTarget teleport_target = new TeleportTarget(world, pos, player.getVelocity(),player.getYaw(),player.getPitch(),TeleportTarget.ADD_PORTAL_CHUNK_TICKET);
 			player.teleportTo(teleport_target);
-			context.getSource().sendFeedback(() -> Text.literal("You have been teleported to your home!").formatted(Formatting.GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"home_success")).formatted(Formatting.GREEN), false);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Error : The home don't exist.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"home_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
@@ -189,6 +213,7 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		JsonObject location = JsonHandler.getPublicLocation(player,home_name);
 		if (location != null){
 			Vec3d pos = new Vec3d(location.get("x").getAsDouble(),location.get("y").getAsDouble(),location.get("z").getAsDouble());
@@ -198,10 +223,10 @@ public class HomeUtilities implements ModInitializer {
 			assert world != null;
 			TeleportTarget teleport_target = new TeleportTarget(world, pos, player.getVelocity(),player.getYaw(),player.getPitch(),TeleportTarget.ADD_PORTAL_CHUNK_TICKET);
 			player.teleportTo(teleport_target);
-			context.getSource().sendFeedback(() -> Text.literal("You have been teleported to the public home!").formatted(Formatting.GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phome_success")).formatted(Formatting.GREEN), false);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Error : The public home don't exist.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
@@ -210,13 +235,14 @@ public class HomeUtilities implements ModInitializer {
 	private int homesExecute(CommandContext<ServerCommandSource> context){
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		List<String> homesList = JsonHandler.listLocations(player);
         if (homesList == null){
-			context.getSource().sendFeedback(() -> Text.literal("Error : You don't have any home.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homes_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Your homes (You can click on them to teleport):").formatted(Formatting.DARK_GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
 				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))), false);
 			}
@@ -227,13 +253,14 @@ public class HomeUtilities implements ModInitializer {
 	private int phomesExecute(CommandContext<ServerCommandSource> context){
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		List<String> homesList = JsonHandler.listPublicLocations(player);
 		if (homesList == null){
-			context.getSource().sendFeedback(() -> Text.literal("Error : The server don't have any public home.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomes_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Public homes (You can click on them to teleport):").formatted(Formatting.DARK_GREEN), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
 				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phome " + home))), false);
 			}
@@ -247,14 +274,16 @@ public class HomeUtilities implements ModInitializer {
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player_target != null;
 		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		String target_language = StateSaverAndLoader.getPlayerState(player_target).getLanguage();
 		if (player_target.getName().getString().equals(player.getName().getString())){
-			context.getSource().sendFeedback(() -> Text.literal("Error : You can't share with yourself.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"sharehome_yourself")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 			return 1;
 		}
 		JsonObject location = JsonHandler.getLocation(player, home_name);
 		if (location == null){
-			context.getSource().sendFeedback(() -> Text.literal("Error : The home don't exist.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"sharehome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
@@ -274,7 +303,7 @@ public class HomeUtilities implements ModInitializer {
 				new_list.add(location);
 				shareHomeMap.put(player_target.getUuid(), new_list);
 			}
-			player_target.sendMessage(Text.literal(String.format("%s wants to share a home with you! To accept it click on this message.", player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/accepthome " + home_finalname))));
+			player_target.sendMessage(Text.literal(String.format(getTranslation(target_language,"sharehome_success"), player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/accepthome " + home_finalname))));
 		}
 		return 1;
 	}
@@ -283,6 +312,7 @@ public class HomeUtilities implements ModInitializer {
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
         assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
         if (shareHomeMap.containsKey(player.getUuid())) {
 			for (JsonObject location : shareHomeMap.get(player.getUuid())){
 				if (location.has("name") && location.get("name").getAsString().equals(home_name)){
@@ -295,17 +325,33 @@ public class HomeUtilities implements ModInitializer {
 						shareHomeMap.remove(player.getUuid());
 					}
 					shareHomeMap.get(player.getUuid()).remove(location);
-					context.getSource().sendFeedback(() -> Text.literal("The home has been transferred! Run /homes to find it.").formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/homes"))), false);
+					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/homes"))), false);
 					player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 					return 1;
 				}
 			}
-			context.getSource().sendFeedback(() -> Text.literal("Error : The home don't exist.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			context.getSource().sendFeedback(() -> Text.literal("Error : There is no home to accept.").formatted(Formatting.RED), false);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_empty")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int homelanguageExecute(CommandContext<ServerCommandSource> context){
+		PlayerData playerData = StateSaverAndLoader.getPlayerState(Objects.requireNonNull(context.getSource().getPlayer()));
+		String new_language = StringArgumentType.getString(context,"language");
+		if (translations.has(new_language)){
+			playerData.setLanguage(new_language);
+			StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(playerData.getLanguage(),"homelanguage_success")).formatted(Formatting.GREEN), false);
+			context.getSource().getPlayer().playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(playerData.getLanguage(),"homelanguage_failure")).formatted(Formatting.RED), false);
+			context.getSource().getPlayer().playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
 	}

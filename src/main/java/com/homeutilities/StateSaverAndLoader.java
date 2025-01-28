@@ -24,6 +24,7 @@ public class StateSaverAndLoader extends PersistentState {
         players.forEach(((uuid, playerData) -> {
             NbtCompound playerNbt = new NbtCompound();
             playerNbt.putString("homes",playerData.toString());
+            playerNbt.putString("language",playerData.getLanguage());
             playersNbt.put(uuid.toString(),playerNbt);
         }));
         nbt.put("players", playersNbt);
@@ -38,6 +39,7 @@ public class StateSaverAndLoader extends PersistentState {
         playersNbt.getKeys().forEach(key -> {
             PlayerData playerData = new PlayerData();
             playerData.setHomes(playersNbt.getCompound(key).getString("homes"));
+            playerData.setLanguage(playersNbt.getCompound(key).getString("language"));
             UUID uuid = UUID.fromString(key);
             state.players.put(uuid, playerData);
         });
@@ -70,6 +72,12 @@ public class StateSaverAndLoader extends PersistentState {
     public static PlayerData getPlayerState(LivingEntity player){
         StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
         return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new PlayerData());
+    }
+
+    public static void resetPlayerState(MinecraftServer server){
+        StateSaverAndLoader serverState = getServerState(server);
+        serverState.players.forEach(((uuid, playerData) -> playerData.setLanguage("en")));
+        saveState(server);
     }
 
     public static PublicData getPublicState(LivingEntity player){
