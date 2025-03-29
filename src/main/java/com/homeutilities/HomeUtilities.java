@@ -244,7 +244,7 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
-				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))), false);
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/home " + home))), false);
 			}
 		}
 		return 1;
@@ -262,7 +262,7 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
-				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phome " + home))), false);
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/home " + home))), false);
 			}
 		}
 		return 1;
@@ -303,7 +303,7 @@ public class HomeUtilities implements ModInitializer {
 				new_list.add(location);
 				shareHomeMap.put(player_target.getUuid(), new_list);
 			}
-			player_target.sendMessage(Text.literal(String.format(getTranslation(target_language,"sharehome_success"), player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/accepthome " + home_finalname))));
+			player_target.sendMessage(Text.literal(String.format(getTranslation(target_language,"sharehome_success"), player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/accepthome " + home_finalname))));
 		}
 		return 1;
 	}
@@ -325,7 +325,7 @@ public class HomeUtilities implements ModInitializer {
 						shareHomeMap.remove(player.getUuid());
 					}
 					shareHomeMap.get(player.getUuid()).remove(location);
-					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/homes"))), false);
+					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN), false);
 					player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 					return 1;
 				}
