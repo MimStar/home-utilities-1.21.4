@@ -32,6 +32,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 
 import javax.swing.plaf.nimbus.State;
 import java.util.*;
@@ -67,27 +68,32 @@ public class HomeUtilities implements ModInitializer {
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("sethome")
+					.requires(Permissions.require("homeutilities.command.sethome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.executes(this::sethomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("delhome")
+					.requires(Permissions.require("homeutilities.command.delhome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.suggests(new HomesSuggestionProvider())
 								.executes(this::delhomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("home")
+					.requires(Permissions.require("homeutilities.command.home", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.suggests(new HomesSuggestionProvider())
 								.executes(this::homeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("homes")
+					.requires(Permissions.require("homeutilities.command.homes", true))
 					.executes(this::homesExecute));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("sharehome")
+					.requires(Permissions.require("homeutilities.command.sharehome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.suggests(new HomesSuggestionProvider())
 								.then(CommandManager.argument("player", EntityArgumentType.player())
@@ -95,32 +101,38 @@ public class HomeUtilities implements ModInitializer {
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("accepthome")
+					.requires(Permissions.require("homeutilities.command.accepthome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.executes(this::accepthomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("psethome")
+					.requires(Permissions.require("homeutilities.command.psethome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.executes(this::psethomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("pdelhome")
+					.requires(Permissions.require("homeutilities.command.pdelhome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.suggests(new PublicHomesSuggestionProvider())
 							.executes(this::pdelhomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("phome")
+					.requires(Permissions.require("homeutilities.command.phome", true))
 					.then(CommandManager.argument("name", StringArgumentType.string())
 							.suggests(new PublicHomesSuggestionProvider())
 							.executes(this::phomeExecute)));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("phomes")
+					.requires(Permissions.require("homeutilities.command.phomes", true))
 					.executes(this::phomesExecute));
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("homelanguage")
+					.requires(Permissions.require("homeutilities.command.homelanguage", true))
 					.then(CommandManager.argument("language", StringArgumentType.string())
 							.suggests(new LanguageSuggestionProvider())
 							.executes(this::homelanguageExecute)));
