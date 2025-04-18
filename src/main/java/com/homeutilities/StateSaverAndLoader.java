@@ -62,11 +62,7 @@ public class StateSaverAndLoader extends PersistentState {
     public static StateSaverAndLoader getServerState(MinecraftServer server){
         PersistentStateManager persistentStateManager = Objects.requireNonNull(server.getWorld(World.OVERWORLD)).getPersistentStateManager();
 
-        StateSaverAndLoader state = persistentStateManager.getOrCreate(type, HomeUtilities.getMOD_ID());
-
-        state.markDirty();
-
-        return state;
+        return persistentStateManager.getOrCreate(type, HomeUtilities.getMOD_ID());
     }
 
     public static PlayerData getPlayerState(LivingEntity player){
@@ -86,7 +82,6 @@ public class StateSaverAndLoader extends PersistentState {
     }
 
     public static void saveState(MinecraftServer server) {
-        PersistentStateManager persistentStateManager = Objects.requireNonNull(server.getWorld(World.OVERWORLD)).getPersistentStateManager();
-        persistentStateManager.save();
+        getServerState(server).markDirty();
     }
 }
