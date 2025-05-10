@@ -15,12 +15,15 @@ public class PublicHomesSuggestionProvider implements SuggestionProvider<ServerC
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         ServerCommandSource source = context.getSource();
+        String input = builder.getRemaining().toLowerCase();
 
         List<String> homesNames = JsonHandler.listPublicLocations(Objects.requireNonNull(source.getPlayer()));
 
-        if (homesNames != null){
-            for (String homeName : homesNames){
-                builder.suggest(homeName);
+        if (homesNames != null) {
+            for (String homeName : homesNames) {
+                if (homeName.toLowerCase().startsWith(input)) {
+                    builder.suggest(homeName);
+                }
             }
         }
 
