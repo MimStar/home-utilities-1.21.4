@@ -13,11 +13,14 @@ import java.util.concurrent.CompletableFuture;
 public class LanguageSuggestionProvider implements SuggestionProvider<ServerCommandSource> {
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+        String input = builder.getRemaining().toLowerCase();
         Set<String> translations = HomeUtilities.listTranslations();
 
         if (translations != null){
             for (String translation : translations){
-                builder.suggest(translation);
+                if (translation.toLowerCase().startsWith(input)) {
+                    builder.suggest(translation);
+                }
             }
         }
 
