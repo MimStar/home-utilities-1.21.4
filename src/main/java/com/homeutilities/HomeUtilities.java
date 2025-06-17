@@ -148,7 +148,7 @@ public class HomeUtilities implements ModInitializer {
 		ServerPlayerEntity player = context.getSource().getPlayer();
         assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-        JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
+        JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(),player.getWorld());
 		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"sethome_success")).formatted(Formatting.GREEN), false);
 		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		return 1;
@@ -160,7 +160,7 @@ public class HomeUtilities implements ModInitializer {
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		String home_finalname = player.getName().getString() + "-" + home_name;
-		JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
+		JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(),player.getWorld());
 		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"psethome_success")).formatted(Formatting.GREEN), false);
 		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		return 1;
