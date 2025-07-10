@@ -1,6 +1,7 @@
 package com.homeutilities;
 
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -137,6 +138,18 @@ public class HomeUtilities implements ModInitializer {
 							.suggests(new LanguageSuggestionProvider())
 							.executes(this::homelanguageExecute)));
 		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("homeslimit")
+					.requires(source -> source.hasPermissionLevel(4))
+					.then(CommandManager.argument("limit", IntegerArgumentType.integer())
+							.executes(this::homeslimitExecute)));
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("phomeslimit")
+					.requires(source -> source.hasPermissionLevel(4))
+					.then(CommandManager.argument("limit", IntegerArgumentType.integer())
+							.executes(this::phomeslimitExecute)));
+		});
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			translations = JsonHandler.loadTranslations(server);
 		});
@@ -146,11 +159,18 @@ public class HomeUtilities implements ModInitializer {
 	private int sethomeExecute(CommandContext<ServerCommandSource> context){
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
-        assert player != null;
+		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-        JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
-		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"sethome_success")).formatted(Formatting.GREEN), false);
-		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		SettingsData settings = StateSaverAndLoader.getSettingsState(player);
+		if (StateSaverAndLoader.getPlayerState(player).getHomes().size() >= settings.getHomeslimit()){
+			context.getSource().sendFeedback(() -> Text.literal(String.format(getTranslation(player_language,"sethome_limit"),settings.getHomeslimit())).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else {
+			JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(), player.getServerWorld());
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "sethome_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
 		return 1;
 	}
 
@@ -159,10 +179,28 @@ public class HomeUtilities implements ModInitializer {
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-		String home_finalname = player.getName().getString() + "-" + home_name;
-		JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(),player.getServerWorld());
-		context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"psethome_success")).formatted(Formatting.GREEN), false);
-		player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		SettingsData settings = StateSaverAndLoader.getSettingsState(player);
+		List<String> phomes = JsonHandler.listPublicLocations(player);
+		int number_of_phomes = 0;
+		if (phomes != null) {
+			for (String phomeName : phomes) {
+				JsonObject phome = JsonHandler.getPublicLocation(player, phomeName);
+				if (phome != null && Objects.equals(phome.get("owner").getAsString(), player.getUuidAsString())) {
+					number_of_phomes++;
+				}
+			}
+		}
+
+		if (number_of_phomes >= settings.getPhomeslimit()){
+			context.getSource().sendFeedback(() -> Text.literal(String.format(getTranslation(player_language,"psethome_limit"),settings.getPhomeslimit())).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else {
+			String home_finalname = player.getName().getString() + "-" + home_name;
+			JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(), player.getServerWorld());
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "psethome_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
 		return 1;
 	}
 
@@ -364,6 +402,44 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(playerData.getLanguage(),"homelanguage_failure")).formatted(Formatting.RED), false);
 			context.getSource().getPlayer().playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int homeslimitExecute(CommandContext<ServerCommandSource> context){
+		int limit = IntegerArgumentType.getInteger(context, "limit");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		if (limit >= 0){
+			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getPlayer()));
+			settings.setHomeslimit(limit);
+			StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homeslimit_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homeslimit_failure")).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int phomeslimitExecute(CommandContext<ServerCommandSource> context){
+		int limit = IntegerArgumentType.getInteger(context, "limit");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		if (limit >= 0){
+			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getPlayer()));
+			settings.setPhomeslimit(limit);
+			StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomeslimit_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		else{
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomeslimit_failure")).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;
 	}

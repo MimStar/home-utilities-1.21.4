@@ -27,16 +27,40 @@ public class JsonHandler {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("home_translations.json");
 
-    public static JsonObject loadTranslations(MinecraftServer server){
-
-        if (!CONFIG_PATH.toFile().exists()){
+    public static JsonObject loadTranslations(MinecraftServer server) {
+        if (!CONFIG_PATH.toFile().exists()) {
             createDefaultConfig(CONFIG_PATH.toFile());
             StateSaverAndLoader.resetPlayerState(server);
+            return readConfigFile();
         }
 
-        try(FileReader reader = new FileReader(CONFIG_PATH.toFile())){
+        try (FileReader reader = new FileReader(CONFIG_PATH.toFile())) {
+            JsonObject config = JsonParser.parseReader(reader).getAsJsonObject();
+
+            if (config.has("en") && config.getAsJsonObject("en").has("version")) {
+                String version = config.getAsJsonObject("en").get("version").getAsString();
+                if (version.compareTo("1.3") < 0) {
+                    createDefaultConfig(CONFIG_PATH.toFile());
+                    StateSaverAndLoader.resetPlayerState(server);
+                    return readConfigFile();
+                }
+            } else {
+                createDefaultConfig(CONFIG_PATH.toFile());
+                StateSaverAndLoader.resetPlayerState(server);
+                return readConfigFile();
+            }
+
+            return config;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new JsonObject();
+        }
+    }
+
+    private static JsonObject readConfigFile() {
+        try (FileReader reader = new FileReader(CONFIG_PATH.toFile())) {
             return JsonParser.parseReader(reader).getAsJsonObject();
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
             return new JsonObject();
         }
@@ -47,7 +71,9 @@ public class JsonHandler {
         JsonObject en = new JsonObject();
 
         en.addProperty("sethome_success","Your home has been set!");
+        en.addProperty("sethome_limit","Error : You can only have %d homes.");
         en.addProperty("psethome_success","Your public home has been set!");
+        en.addProperty("psethome_limit","Error : You can only have %d public homes.");
         en.addProperty("delhome_success","Your home has been deleted!");
         en.addProperty("delhome_failure","Error : The home don't exist.");
         en.addProperty("pdelhome_success","Your public home has been deleted!");
@@ -68,7 +94,11 @@ public class JsonHandler {
         en.addProperty("accepthome_empty","Error : There is no home to accept.");
         en.addProperty("homelanguage_success","HOME language changed!");
         en.addProperty("homelanguage_failure","Error : The language provided is invalid.");
-        en.addProperty("version", "1.2");
+        en.addProperty("homeslimit_success","The new limit of homes has been set!");
+        en.addProperty("homeslimit_failure","Error : Please provide a number that is not negative.");
+        en.addProperty("phomeslimit_success","The new limit of public homes has been set!");
+        en.addProperty("phomeslimit_failure","Error : Please provide a number that is not negative.");
+        en.addProperty("version", "1.3");
 
         defaultConfig.add("en",en);
 

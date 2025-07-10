@@ -17,6 +17,7 @@ public class StateSaverAndLoader extends PersistentState {
 
     public HashMap<UUID,PlayerData> players = new HashMap<>();
     public PublicData publicHomes = new PublicData();
+    public SettingsData settings = new SettingsData();
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapperLookup){
@@ -29,6 +30,7 @@ public class StateSaverAndLoader extends PersistentState {
         }));
         nbt.put("players", playersNbt);
         nbt.putString("publichomes",publicHomes.toString());
+        nbt.putString("settings",settings.toString());
         return nbt;
     }
 
@@ -48,6 +50,11 @@ public class StateSaverAndLoader extends PersistentState {
         String publicHomesString = tag.getString("publichomes");
         if (publicHomesString != null && !publicHomesString.isEmpty()) {
             state.publicHomes.setHomes(publicHomesString);
+        }
+
+        String settingsString = tag.getString("settings");
+        if (settingsString != null && !settingsString.isEmpty()) {
+            state.settings.setSettings(settingsString);
         }
 
         return state;
@@ -79,6 +86,11 @@ public class StateSaverAndLoader extends PersistentState {
     public static PublicData getPublicState(LivingEntity player){
         StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
         return serverState.publicHomes;
+    }
+
+    public static SettingsData getSettingsState(LivingEntity player){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+        return serverState.settings;
     }
 
     public static void saveState(MinecraftServer server) {
