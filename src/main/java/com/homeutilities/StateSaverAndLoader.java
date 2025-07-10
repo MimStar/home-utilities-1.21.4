@@ -19,15 +19,18 @@ public class StateSaverAndLoader extends PersistentState {
 
     public Map<UUID,PlayerData> players;
     public PublicData publicHomes;
+    public SettingsData settings;
 
     public StateSaverAndLoader(){
         this.players = new HashMap<>();
         this.publicHomes = new PublicData();
+        this.settings = new SettingsData();
     }
 
-    public StateSaverAndLoader(Map<UUID, PlayerData> players, PublicData publicHomes) {
+    public StateSaverAndLoader(Map<UUID, PlayerData> players, PublicData publicHomes, SettingsData settings) {
         this.players = new HashMap<>(players);
         this.publicHomes = publicHomes;
+        this.settings = settings;
     }
     /*
     @Override
@@ -68,7 +71,8 @@ public class StateSaverAndLoader extends PersistentState {
     public static final Codec<StateSaverAndLoader> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING.xmap(UUID::fromString, UUID::toString),
                     PlayerData.CODEC).fieldOf("players").forGetter(state -> state.players),
-            PublicData.CODEC.fieldOf("publicHomes").forGetter(state -> state.publicHomes)
+            PublicData.CODEC.fieldOf("publicHomes").forGetter(state -> state.publicHomes),
+            SettingsData.CODEC.fieldOf("settings").forGetter(state -> state.settings)
     ).apply(instance, StateSaverAndLoader::new));
 
     private static final PersistentStateType<StateSaverAndLoader> type = new PersistentStateType<>(
@@ -98,6 +102,11 @@ public class StateSaverAndLoader extends PersistentState {
     public static PublicData getPublicState(LivingEntity player){
         StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
         return serverState.publicHomes;
+    }
+
+    public static SettingsData getSettingsState(LivingEntity player){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+        return serverState.settings;
     }
 
     public static void saveState(MinecraftServer server) {
