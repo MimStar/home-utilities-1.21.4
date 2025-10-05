@@ -150,6 +150,16 @@ public class HomeUtilities implements ModInitializer {
 					.then(CommandManager.argument("limit", IntegerArgumentType.integer())
 							.executes(this::phomeslimitExecute)));
 		});
+
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("renamehome")
+					.requires(Permissions.require("homeutilities.command.renamehome", true))
+					.then(CommandManager.argument("name", StringArgumentType.string())
+						.suggests(new HomesSuggestionProvider())
+							.then(CommandManager.argument("new_name", StringArgumentType.string())
+								.executes(this::renamehomeExecute))));
+		});
+
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			translations = JsonHandler.loadTranslations(server);
 		});
@@ -444,4 +454,37 @@ public class HomeUtilities implements ModInitializer {
 		return 1;
 	}
 
+	private int renamehomeExecute(CommandContext<ServerCommandSource> context){
+		String home_name = StringArgumentType.getString(context, "name");
+		String new_name = StringArgumentType.getString(context, "new_name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		JsonObject location = JsonHandler.getLocation(player, home_name);
+		if (location != null) {
+			Identifier identifier = Identifier.of(location.get("world").getAsString());
+			RegistryKey<World> worldRegistryKey = RegistryKey.of(RegistryKeys.WORLD, identifier);
+			ServerWorld world = context.getSource().getServer().getWorld(worldRegistryKey);
+			assert world != null;
+
+			double x = location.get("x").getAsDouble();
+			double y = location.get("y").getAsDouble();
+			double z = location.get("z").getAsDouble();
+
+			if (JsonHandler.removeLocation(player, home_name)) {
+				JsonHandler.addLocation(player, new_name, x, y, z, world);
+
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_success")).formatted(Formatting.GREEN), false);
+				player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+			} else {
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_failure")).formatted(Formatting.RED), false);
+				player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+			}
+		} else {
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_failure")).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+
+		return 1;
+	}
 }
