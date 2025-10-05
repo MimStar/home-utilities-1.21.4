@@ -98,6 +98,8 @@ public class JsonHandler {
         en.addProperty("homeslimit_failure","Error : Please provide a number that is not negative.");
         en.addProperty("phomeslimit_success","The new limit of public homes has been set!");
         en.addProperty("phomeslimit_failure","Error : Please provide a number that is not negative.");
+        en.addProperty("renamehome_success", "Your home has been renamed!");
+        en.addProperty("renamehome_failure", "Error : The home don't exist.");
         en.addProperty("version", "1.3");
 
         defaultConfig.add("en",en);
@@ -164,6 +166,7 @@ public class JsonHandler {
             return null;
         }
         else{
+            System.out.println(playerData.getHomes().get(name));
             return playerData.getHomes().get(name).getAsJsonObject();
         }
     }
