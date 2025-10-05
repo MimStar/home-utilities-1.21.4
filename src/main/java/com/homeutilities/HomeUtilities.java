@@ -471,16 +471,13 @@ public class HomeUtilities implements ModInitializer {
 			double y = location.get("y").getAsDouble();
 			double z = location.get("z").getAsDouble();
 
-			if (JsonHandler.removeLocation(player, home_name)) {
-				JsonHandler.addLocation(player, new_name, x, y, z, world);
+			JsonHandler.removeLocation(player, home_name);
+			JsonHandler.addLocation(player, new_name, x, y, z, world);
 
-				context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_success")).formatted(Formatting.GREEN), false);
-				player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
-			} else {
-				context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_failure")).formatted(Formatting.RED), false);
-				player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 			}
-		} else {
+		else {
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}

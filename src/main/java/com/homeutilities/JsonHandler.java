@@ -166,6 +166,7 @@ public class JsonHandler {
             return null;
         }
         else{
+            System.out.println(playerData.getHomes().get(name));
             return playerData.getHomes().get(name).getAsJsonObject();
         }
     }
