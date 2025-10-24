@@ -118,7 +118,7 @@ public class JsonHandler {
         RegistryKey<World> registryKey = world.getRegistryKey();
         locationObject.addProperty("world", registryKey.getValue().toString());
         playerData.getHomes().add(name,locationObject);
-        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getEntityWorld().getServer()));
     }
 
     public static void addPublicLocation(ServerPlayerEntity player, String name, double x, double y, double z, ServerWorld world){
@@ -131,7 +131,7 @@ public class JsonHandler {
         locationObject.addProperty("world", registryKey.getValue().toString());
         locationObject.addProperty("owner",player.getUuidAsString());
         publicData.getHomes().add(name,locationObject);
-        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getEntityWorld().getServer()));
     }
 
     public static boolean removeLocation(ServerPlayerEntity player, String name){
@@ -141,7 +141,7 @@ public class JsonHandler {
         }
         else{
             playerData.getHomes().remove(name);
-            StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+            StateSaverAndLoader.saveState(Objects.requireNonNull(player.getEntityWorld().getServer()));
             return true;
         }
     }
@@ -153,7 +153,7 @@ public class JsonHandler {
         }
         else{
             publicData.getHomes().remove(name);
-            StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+            StateSaverAndLoader.saveState(Objects.requireNonNull(player.getEntityWorld().getServer()));
             return true;
         }
     }

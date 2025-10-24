@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HomeUtilities implements ModInitializer {
-	private static final String MOD_ID = "home-utilities";
+	public static final String MOD_ID = "home-utilities";
 	private static final ConcurrentHashMap<UUID, LinkedList<JsonObject>> shareHomeMap = new ConcurrentHashMap<>();
 	private static JsonObject translations = new JsonObject();
 	// This logger is used to write text to the console and the log file.
@@ -167,7 +167,7 @@ public class HomeUtilities implements ModInitializer {
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else {
-			JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(), player.getServerWorld());
+			JsonHandler.addLocation(player, home_name, player.getX(), player.getY(), player.getZ(), player.getEntityWorld());
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "sethome_success")).formatted(Formatting.GREEN), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
@@ -197,7 +197,7 @@ public class HomeUtilities implements ModInitializer {
 		}
 		else {
 			String home_finalname = player.getName().getString() + "-" + home_name;
-			JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(), player.getServerWorld());
+			JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(), player.getEntityWorld());
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "psethome_success")).formatted(Formatting.GREEN), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
@@ -294,7 +294,7 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
-				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))), false);
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/home " + home))), false);
 			}
 		}
 		return 1;
@@ -312,7 +312,7 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
-				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phome " + home))), false);
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/phome " + home))), false);
 			}
 		}
 		return 1;
@@ -353,7 +353,7 @@ public class HomeUtilities implements ModInitializer {
 				new_list.add(location);
 				shareHomeMap.put(player_target.getUuid(), new_list);
 			}
-			player_target.sendMessage(Text.literal(String.format(getTranslation(target_language,"sharehome_success"), player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/accepthome " + home_finalname))));
+			player_target.sendMessage(Text.literal(String.format(getTranslation(target_language,"sharehome_success"), player.getName().getString())).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/accepthome " + home_finalname))));
 		}
 		return 1;
 	}
@@ -375,7 +375,7 @@ public class HomeUtilities implements ModInitializer {
 						shareHomeMap.remove(player.getUuid());
 					}
 					shareHomeMap.get(player.getUuid()).remove(location);
-					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/homes"))), false);
+					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/homes"))), false);
 					player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 					return 1;
 				}
