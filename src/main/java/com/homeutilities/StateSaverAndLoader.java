@@ -88,9 +88,9 @@ public class StateSaverAndLoader extends PersistentState {
         return persistentStateManager.getOrCreate(type);
     }
 
-    public static PlayerData getPlayerState(LivingEntity player){
-        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
-        return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new PlayerData());
+    public static PlayerData getPlayerState(MinecraftServer server, UUID player_uuid){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(server));
+        return serverState.players.computeIfAbsent(player_uuid, uuid -> new PlayerData());
     }
 
     public static void resetPlayerState(MinecraftServer server){
@@ -99,13 +99,13 @@ public class StateSaverAndLoader extends PersistentState {
         saveState(server);
     }
 
-    public static PublicData getPublicState(LivingEntity player){
-        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+    public static PublicData getPublicState(MinecraftServer server){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(server));
         return serverState.publicHomes;
     }
 
-    public static SettingsData getSettingsState(LivingEntity player){
-        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+    public static SettingsData getSettingsState(MinecraftServer server){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(server));
         return serverState.settings;
     }
 
