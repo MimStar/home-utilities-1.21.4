@@ -1,6 +1,5 @@
 package com.homeutilities;
 
-import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -88,8 +87,8 @@ public class StateSaverAndLoader extends PersistentState {
         return serverState.publicHomes;
     }
 
-    public static SettingsData getSettingsState(LivingEntity player){
-        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(player.getServer()));
+    public static SettingsData getSettingsState(MinecraftServer server){
+        StateSaverAndLoader serverState = getServerState(Objects.requireNonNull(server));
         return serverState.settings;
     }
 
