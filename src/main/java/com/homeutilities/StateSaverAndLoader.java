@@ -87,7 +87,7 @@ public class StateSaverAndLoader extends PersistentState {
         });
 
         // Add null check for publicHomes
-        NbtCompound publicHomesCompound = tag.getCompound("publicHomes").orElse(new NbtCompound());
+        NbtCompound publicHomesCompound = tag.getCompound("publichomes").orElse(new NbtCompound());
         String publicHomesString = publicHomesCompound.getString("homes").orElse("");
         if (!publicHomesString.isEmpty()) {
             state.publicHomes.setHomes(publicHomesString);
