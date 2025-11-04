@@ -9,15 +9,9 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.block.Blocks;
 import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -150,6 +144,22 @@ public class HomeUtilities implements ModInitializer {
 					.then(CommandManager.argument("limit", IntegerArgumentType.integer())
 							.executes(this::phomeslimitExecute)));
 		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("renamehome")
+					.requires(Permissions.require("homeutilities.command.renamehome", true))
+					.then(CommandManager.argument("name", StringArgumentType.string())
+							.suggests(new HomesSuggestionProvider())
+							.then(CommandManager.argument("new_name", StringArgumentType.string())
+									.executes(this::renamehomeExecute))));
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("prenamehome")
+					.requires(Permissions.require("homeutilities.command.prenamehome", true))
+					.then(CommandManager.argument("name", StringArgumentType.string())
+							.suggests(new PublicHomesSuggestionProvider())
+							.then(CommandManager.argument("new_name", StringArgumentType.string())
+									.executes(this::prenamehomeExecute))));
+		});
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			translations = JsonHandler.loadTranslations(server);
 		});
@@ -157,11 +167,15 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int sethomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-		SettingsData settings = StateSaverAndLoader.getSettingsState(player);
+		SettingsData settings = StateSaverAndLoader.getSettingsState(player.getServer());
 		if (StateSaverAndLoader.getPlayerState(player).getHomes().size() >= settings.getHomeslimit()){
 			context.getSource().sendFeedback(() -> Text.literal(String.format(getTranslation(player_language,"sethome_limit"),settings.getHomeslimit())).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
@@ -175,11 +189,15 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int psethomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-		SettingsData settings = StateSaverAndLoader.getSettingsState(player);
+		SettingsData settings = StateSaverAndLoader.getSettingsState(player.getServer());
 		List<String> phomes = JsonHandler.listPublicLocations(player);
 		int number_of_phomes = 0;
 		if (phomes != null) {
@@ -196,7 +214,7 @@ public class HomeUtilities implements ModInitializer {
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else {
-			String home_finalname = player.getName().getString() + "-" + home_name;
+			String home_finalname = home_name + "-" + player.getName().getString();
 			JsonHandler.addPublicLocation(player, home_finalname, player.getX(), player.getY(), player.getZ(), player.getServerWorld());
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "psethome_success")).formatted(Formatting.GREEN), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
@@ -205,6 +223,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int delhomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
@@ -221,6 +243,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int pdelhomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
@@ -237,6 +263,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int homeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
@@ -260,6 +290,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int phomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
@@ -283,11 +317,15 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int homesExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		List<String> homesList = JsonHandler.listLocations(player);
-        if (homesList == null){
+		if (homesList == null){
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homes_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
@@ -301,6 +339,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int phomesExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
@@ -312,13 +354,17 @@ public class HomeUtilities implements ModInitializer {
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomes_success")).formatted(Formatting.DARK_GREEN), false);
 			for (String home : homesList){
-				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/home " + home))), false);
+				context.getSource().sendFeedback(() -> Text.literal("- " + home).formatted(Formatting.GOLD).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/phome " + home))), false);
 			}
 		}
 		return 1;
 	}
 
 	private int sharehomeExecute(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player_target = EntityArgumentType.getPlayer(context, "player");
 		ServerPlayerEntity player = context.getSource().getPlayer();
@@ -337,7 +383,7 @@ public class HomeUtilities implements ModInitializer {
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		else{
-			String home_finalname = player.getName().getString() + "-" + home_name;
+			String home_finalname = home_name + "-" + player.getName().getString();
 			JsonObject new_location = new JsonObject();
 			location.addProperty("name",home_finalname);
 			location.addProperty("x", location.get("x").getAsDouble());
@@ -345,7 +391,7 @@ public class HomeUtilities implements ModInitializer {
 			location.addProperty("z", location.get("z").getAsDouble());
 			location.addProperty("world", location.get("world").getAsString());
 			if (shareHomeMap.containsKey(player_target.getUuid())){
-                shareHomeMap.get(player_target.getUuid()).removeIf(check -> check.has("name") && check.get("name").getAsString().equals(home_finalname));
+				shareHomeMap.get(player_target.getUuid()).removeIf(check -> check.has("name") && check.get("name").getAsString().equals(home_finalname));
 				shareHomeMap.get(player_target.getUuid()).add(location);
 			}
 			else{
@@ -359,23 +405,27 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int accepthomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		String home_name = StringArgumentType.getString(context, "name");
 		ServerPlayerEntity player = context.getSource().getPlayer();
-        assert player != null;
+		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
-        if (shareHomeMap.containsKey(player.getUuid())) {
+		if (shareHomeMap.containsKey(player.getUuid())) {
 			for (JsonObject location : shareHomeMap.get(player.getUuid())){
 				if (location.has("name") && location.get("name").getAsString().equals(home_name)){
 					Identifier identifier = Identifier.of(location.get("world").getAsString());
 					RegistryKey<World> worldRegistryKey = RegistryKey.of(RegistryKeys.WORLD,identifier);
 					ServerWorld world = context.getSource().getServer().getWorld(worldRegistryKey);
-                    assert world != null;
-                    JsonHandler.addLocation(player, location.get("name").getAsString(), location.get("x").getAsDouble(), location.get("y").getAsDouble(), location.get("z").getAsDouble(), world);
+					assert world != null;
+					JsonHandler.addLocation(player, location.get("name").getAsString(), location.get("x").getAsDouble(), location.get("y").getAsDouble(), location.get("z").getAsDouble(), world);
 					if (shareHomeMap.get(player.getUuid()).isEmpty()) {
 						shareHomeMap.remove(player.getUuid());
 					}
 					shareHomeMap.get(player.getUuid()).remove(location);
-					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN), false);
+					context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"accepthome_success")).formatted(Formatting.GREEN).styled(style -> style.withClickEvent(new ClickEvent.RunCommand("/homes"))), false);
 					player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
 					return 1;
 				}
@@ -391,6 +441,10 @@ public class HomeUtilities implements ModInitializer {
 	}
 
 	private int homelanguageExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
 		PlayerData playerData = StateSaverAndLoader.getPlayerState(Objects.requireNonNull(context.getSource().getPlayer()));
 		String new_language = StringArgumentType.getString(context,"language");
 		if (translations.has(new_language)){
@@ -408,11 +462,23 @@ public class HomeUtilities implements ModInitializer {
 
 	private int homeslimitExecute(CommandContext<ServerCommandSource> context){
 		int limit = IntegerArgumentType.getInteger(context, "limit");
+		if (!context.getSource().isExecutedByPlayer()) {
+			if (limit >= 0){
+				SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getServer()));
+				settings.setHomeslimit(limit);
+				StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation("en","homeslimit_success")).formatted(Formatting.GREEN), false);
+			}
+			else{
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation("en","homeslimit_failure")).formatted(Formatting.RED), false);
+			}
+			return 1;
+		}
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		if (limit >= 0){
-			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getPlayer()));
+			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getServer()));
 			settings.setHomeslimit(limit);
 			StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"homeslimit_success")).formatted(Formatting.GREEN), false);
@@ -427,11 +493,23 @@ public class HomeUtilities implements ModInitializer {
 
 	private int phomeslimitExecute(CommandContext<ServerCommandSource> context){
 		int limit = IntegerArgumentType.getInteger(context, "limit");
+		if (!context.getSource().isExecutedByPlayer()){
+			if (limit >= 0) {
+				SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getServer()));
+				settings.setPhomeslimit(limit);
+				StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation("en", "phomeslimit_success")).formatted(Formatting.GREEN), false);
+			}
+			else{
+				context.getSource().sendFeedback(() -> Text.literal(getTranslation("en","phomeslimit_failure")).formatted(Formatting.RED), false);
+			}
+			return 1;
+		}
 		ServerPlayerEntity player = context.getSource().getPlayer();
 		assert player != null;
 		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
 		if (limit >= 0){
-			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getPlayer()));
+			SettingsData settings = StateSaverAndLoader.getSettingsState(Objects.requireNonNull(context.getSource().getServer()));
 			settings.setPhomeslimit(limit);
 			StateSaverAndLoader.saveState(Objects.requireNonNull(context.getSource().getServer()));
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomeslimit_success")).formatted(Formatting.GREEN), false);
@@ -439,6 +517,47 @@ public class HomeUtilities implements ModInitializer {
 		}
 		else{
 			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language,"phomeslimit_failure")).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int renamehomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
+		String home_name = StringArgumentType.getString(context, "name");
+		String new_name = StringArgumentType.getString(context, "new_name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		if (JsonHandler.renameLocation(player, home_name, new_name)) {
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		} else {
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "renamehome_failure")).formatted(Formatting.RED), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
+		}
+		return 1;
+	}
+
+	private int prenamehomeExecute(CommandContext<ServerCommandSource> context){
+		if (!context.getSource().isExecutedByPlayer()){
+			context.getSource().sendFeedback(() -> Text.literal("This command can't be executed by the server."),false);
+			return 0;
+		}
+		String home_name = StringArgumentType.getString(context, "name");
+		String new_name = StringArgumentType.getString(context, "new_name");
+		ServerPlayerEntity player = context.getSource().getPlayer();
+		assert player != null;
+		String player_language = StateSaverAndLoader.getPlayerState(player).getLanguage();
+		String home_finalname = new_name + "-" + player.getName().getString();
+		if (JsonHandler.renamePublicLocation(player, home_name, home_finalname)) {
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "prenamehome_success")).formatted(Formatting.GREEN), false);
+			player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.MASTER, 1.0f, 1.0f);
+		} else {
+			context.getSource().sendFeedback(() -> Text.literal(getTranslation(player_language, "prenamehome_failure")).formatted(Formatting.RED), false);
 			player.playSoundToPlayer(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.MASTER, 1.0f, 1.0f);
 		}
 		return 1;

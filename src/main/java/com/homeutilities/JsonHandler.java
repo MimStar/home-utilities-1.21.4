@@ -39,7 +39,7 @@ public class JsonHandler {
 
             if (config.has("en") && config.getAsJsonObject("en").has("version")) {
                 String version = config.getAsJsonObject("en").get("version").getAsString();
-                if (version.compareTo("1.3") < 0) {
+                if (version.compareTo("1.3.1") < 0) {
                     createDefaultConfig(CONFIG_PATH.toFile());
                     StateSaverAndLoader.resetPlayerState(server);
                     return readConfigFile();
@@ -98,7 +98,11 @@ public class JsonHandler {
         en.addProperty("homeslimit_failure","Error : Please provide a number that is not negative.");
         en.addProperty("phomeslimit_success","The new limit of public homes has been set!");
         en.addProperty("phomeslimit_failure","Error : Please provide a number that is not negative.");
-        en.addProperty("version", "1.3");
+        en.addProperty("renamehome_success", "Your home has been renamed!");
+        en.addProperty("renamehome_failure", "Error : The home don't exist.");
+        en.addProperty("prenamehome_success", "Your public home has been renamed!");
+        en.addProperty("prenamehome_failure", "Error : The public home don't exist or you're not the owner.");
+        en.addProperty("version", "1.3.1");
 
         defaultConfig.add("en",en);
 
@@ -196,5 +200,43 @@ public class JsonHandler {
         else{
             return new ArrayList<>(publicData.getHomes().keySet());
         }
+    }
+
+    public static boolean renameLocation(ServerPlayerEntity player, String oldName, String newName) {
+        PlayerData playerData = StateSaverAndLoader.getPlayerState(player);
+        JsonObject homes = playerData.getHomes();
+
+        if (homes.isEmpty() || !homes.has(oldName)){
+            return false;
+        }
+
+        JsonObject locationObject = homes.get(oldName).getAsJsonObject();
+        homes.remove(oldName);
+        homes.add(newName, locationObject);
+
+        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+        return true;
+    }
+
+    public static boolean renamePublicLocation(ServerPlayerEntity player, String oldName, String newName) {
+        PublicData publicData = StateSaverAndLoader.getPublicState(player);
+        JsonObject homes = publicData.getHomes();
+
+        if (homes.isEmpty() || !homes.has(oldName)) {
+            return false;
+        }
+
+        JsonObject locationObject = homes.get(oldName).getAsJsonObject();
+        String owner = locationObject.get("owner").getAsString();
+
+        if (!Objects.equals(owner, player.getUuidAsString())) {
+            return false;
+        }
+
+        homes.remove(oldName);
+        homes.add(newName, locationObject);
+
+        StateSaverAndLoader.saveState(Objects.requireNonNull(player.getServer()));
+        return true;
     }
 }
