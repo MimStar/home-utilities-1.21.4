@@ -74,35 +74,6 @@ public class StateSaverAndLoader extends PersistentState {
     }
     */
 
-    public static StateSaverAndLoader createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
-        StateSaverAndLoader state = new StateSaverAndLoader();
-
-        NbtCompound playersNbt = tag.getCompound("players").orElse(new NbtCompound());
-        playersNbt.getKeys().forEach(key -> {
-            PlayerData playerData = new PlayerData();
-            playerData.setHomes(playersNbt.getCompound(key).map(nbt -> nbt.getString("homes").orElse("")).orElse(""));
-            playerData.setLanguage(playersNbt.getCompound(key).map(nbt -> nbt.getString("language").orElse("")).orElse(""));
-            UUID uuid = UUID.fromString(key);
-            state.players.put(uuid, playerData);
-        });
-
-        // Add null check for publicHomes
-        NbtCompound publicHomesCompound = tag.getCompound("publichomes").orElse(new NbtCompound());
-        String publicHomesString = publicHomesCompound.getString("homes").orElse("");
-        if (!publicHomesString.isEmpty()) {
-            state.publicHomes.setHomes(publicHomesString);
-        }
-
-        String settingsString = tag.getString("settings").orElse("");
-        if (!settingsString.isEmpty()) {
-            state.settings.setSettings(settingsString);
-        }
-
-        // state.markDirty();
-
-        return state;
-    }
-
     private static final Codec<StateSaverAndLoader> CODEC =
             RecordCodecBuilder.create(instance -> instance.group(
                     Codec.unboundedMap(
@@ -113,42 +84,10 @@ public class StateSaverAndLoader extends PersistentState {
                     SettingsData.CODEC.fieldOf("settings").forGetter(s -> s.settings)
             ).apply(instance, StateSaverAndLoader::new));
 
-    private static final Codec<StateSaverAndLoader> FALLBACK_CODEC = new Codec<StateSaverAndLoader>() {
-        @Override
-        public <T> DataResult<T> encode(StateSaverAndLoader input, DynamicOps<T> ops, T prefix) {
-            // Always encode using the new format
-            return CODEC.encode(input, ops, prefix);
-        }
-
-        @Override
-        public <T> DataResult<Pair<StateSaverAndLoader, T>> decode(DynamicOps<T> ops, T input) {
-            // First try the new CODEC format
-            DataResult<Pair<StateSaverAndLoader, T>> newFormatResult = CODEC.decode(ops, input);
-
-            if (newFormatResult.result().isPresent()) {
-                return newFormatResult;
-            }
-
-            // If new format fails, try to convert from old NBT format
-            if (ops instanceof NbtOps && input instanceof NbtCompound nbt) {
-                try {
-                    StateSaverAndLoader state = createFromNbt(nbt, null);
-                    return DataResult.success(Pair.of(state, input));
-                } catch (Exception e) {
-                    // Return error or fallback to empty state
-                    return DataResult.error(() -> "Failed to parse old NBT format: " + e.getMessage());
-                }
-            }
-
-            // If neither format works, return the original error
-            return newFormatResult;
-        }
-    };
-
     private static final PersistentStateType<StateSaverAndLoader> type = new PersistentStateType<>(
             HomeUtilities.getMOD_ID(),
             StateSaverAndLoader::new,
-            FALLBACK_CODEC, // Use the fallback CODEC instead
+            CODEC, // Use the fallback CODEC instead
             null
     );
 
