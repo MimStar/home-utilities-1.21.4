@@ -31,13 +31,6 @@ public class PlayerData {
         this.language = language;
     }
 
-    public void setHomes(String homes) {
-        JsonObject parsedHomes = JsonParser.parseString(homes).getAsJsonObject();
-        if (parsedHomes != null) {
-            this.homes = parsedHomes;
-        }
-    }
-
     public String toString(){
         return homes.toString();
     }

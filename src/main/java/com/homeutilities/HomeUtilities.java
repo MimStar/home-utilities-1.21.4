@@ -9,9 +9,14 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtSizeTracker;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,6 +26,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.util.Identifier;
@@ -29,7 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 
-import javax.swing.plaf.nimbus.State;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -60,7 +68,6 @@ public class HomeUtilities implements ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(CommandManager.literal("sethome")
 					.requires(Permissions.require("homeutilities.command.sethome", true))
@@ -161,9 +168,65 @@ public class HomeUtilities implements ModInitializer {
 									.executes(this::prenamehomeExecute))));
 		});
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			LOGGER.info("Checking Home Utilities Data...");
+			checkHomeUtilitiesData(server);
+			LOGGER.info("Loading Home Utilities Translations...");
 			translations = JsonHandler.loadTranslations(server);
+			LOGGER.info("Everything is loaded, have fun!");
 		});
 		LOGGER.info("HOME Utilities has been loaded successfully!");
+	}
+
+	private void checkHomeUtilitiesData(MinecraftServer server){
+		Path dataFolder = server.getSavePath(WorldSavePath.ROOT).resolve("data");
+		File dataFile = dataFolder.resolve("home-utilities.dat").toFile();
+
+		if (!dataFile.exists()){
+			LOGGER.info("Home Utilities Data don't exists.");
+			return;
+		}
+
+		try {
+			NbtCompound nbt = NbtIo.readCompressed(dataFile.toPath(),NbtSizeTracker.ofUnlimitedBytes());
+			if (nbt == null) return;
+			// Check if conversion is needed (DataVersion < 4325)
+			int dataVersion = nbt.getInt("DataVersion",0);
+			if (dataVersion >= 4325) {
+				LOGGER.info("Home Utilities Data already up to date!");
+				return; // Already up-to-date
+			}
+			LOGGER.info("Home Utilities Data is old, updating...");
+			NbtCompound data = nbt.getCompoundOrEmpty("data");
+			// Convert settings from string to compound
+			if (data.contains("settings")) { // 8 = string type
+				String settings = data.getString("settings","10:10");
+				String[] parts = settings.split(":");
+				if (parts.length == 2) {
+					NbtCompound newSettings = new NbtCompound();
+					newSettings.putInt("phomeslimit", Integer.parseInt(parts[0]));
+					newSettings.putInt("homeslimit", Integer.parseInt(parts[1]));
+					data.put("settings", newSettings);
+				}
+			}
+
+			// Convert publichomes to publicHomes structure
+			if (data.contains("publichomes")) { // 8 = string type
+				String publicHomesJson = data.getString("publichomes","{}");
+				NbtCompound newPublicHomes = new NbtCompound();
+				newPublicHomes.putString("homes", publicHomesJson);
+				data.put("publicHomes", newPublicHomes);
+				data.remove("publichomes"); // Remove old key
+			}
+
+			// Update DataVersion
+			nbt.putInt("DataVersion", 4325);
+
+			// Write back the converted data
+			NbtIo.writeCompressed(nbt, dataFile.toPath());
+			LOGGER.info("Home Utilities Data is updated! Have fun!");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private int sethomeExecute(CommandContext<ServerCommandSource> context){

@@ -35,18 +35,8 @@ public class SettingsData {
         this.phomeslimit = phomeslimit;
     }
 
-    public void setSettings(String settings){
-        String[] split = settings.split(":");
-        homeslimit = Integer.parseInt(split[0]);
-        phomeslimit = Integer.parseInt(split[1]);
-    }
-
     public static final Codec<SettingsData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("homeslimit").forGetter(SettingsData::getHomeslimit),
             Codec.INT.fieldOf("phomeslimit").forGetter(SettingsData::getPhomeslimit)
     ).apply(instance, SettingsData::new));
-
-    public String toString(){
-        return homeslimit + ":" + phomeslimit;
-    }
 }
