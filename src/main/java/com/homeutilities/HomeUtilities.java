@@ -198,7 +198,7 @@ public class HomeUtilities implements ModInitializer {
 			LOGGER.info("Home Utilities Data is old, updating...");
 			NbtCompound data = nbt.getCompoundOrEmpty("data");
 			// Convert settings from string to compound
-			if (data.contains("settings")) { // 8 = string type
+			if (data.contains("settings")) {
 				String settings = data.getString("settings","10:10");
 				String[] parts = settings.split(":");
 				if (parts.length == 2) {
@@ -210,7 +210,7 @@ public class HomeUtilities implements ModInitializer {
 			}
 
 			// Convert publichomes to publicHomes structure
-			if (data.contains("publichomes")) { // 8 = string type
+			if (data.contains("publichomes")) {
 				String publicHomesJson = data.getString("publichomes","{}");
 				NbtCompound newPublicHomes = new NbtCompound();
 				newPublicHomes.putString("homes", publicHomesJson);
