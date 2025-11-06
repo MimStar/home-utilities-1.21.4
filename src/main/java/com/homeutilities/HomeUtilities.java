@@ -159,7 +159,9 @@ public class HomeUtilities implements ModInitializer {
 									.executes(this::prenamehomeExecute))));
 		});
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			LOGGER.info("Loading Home Utilities Translations...");
 			translations = JsonHandler.loadTranslations(server);
+			LOGGER.info("Everything is loaded, have fun!");
 		});
 		LOGGER.info("HOME Utilities has been loaded successfully!");
 	}
